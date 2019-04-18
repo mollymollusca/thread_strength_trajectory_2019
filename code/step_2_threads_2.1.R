@@ -58,7 +58,7 @@ FindPeaks<-function(points, magslope=0.05){
 
 
 # Open files #####
-setwd("~/threads/Trajectories_together")
+setwd("~/thread_strength_trajectory_2019/Trajectories_together")
 files <- list.files(full.names = TRUE, include.dirs = TRUE)
 file_names <- list.files(full.names = FALSE, include.dirs = FALSE)
 
@@ -68,7 +68,7 @@ for(j in 7:7
     ){
   tryCatch({
   #j <- 3 # 7 is a good one
-  setwd("~/threads/Trajectories_together")
+  setwd("~/thread_strength_trajectory_2019/Trajectories_together")
   data_1 <- 0
   data_1 <- read.csv(file = files[j], header = TRUE, stringsAsFactors = FALSE, skip = 5)
   data_1 <- data_1[,2:4]
@@ -100,22 +100,22 @@ for(j in 7:7
       T1<-NULL
       if(nrow(data_1)>=100){
       #T1<-PeaksAndValleys(data=data_2, pThresh=0, vThresh=0, maxint=500, maxPre=0.1, dyMin=0.01, dydxMax=(-1))
-       setwd("~/threads/Trajectories_plots2.1")
+       setwd("~/thread_strength_trajectory_2019/Trajectories_plots2.1")
        png(filename = paste(file_names[j],".png", sep = ""))
        plot(data_1$load~data_1$time, pch=".", cex=1.5, xlim=c(150, 625))
        points(T1$Pload~T1$Ptime, pch=16, cex=1.25, col='green')
        points(T1$Vload~T1$Vtime, pch=16, cex=1.25, col='red')
        dev.off()
-       setwd(setwd("~/threads/Trajectories_together"))
+       setwd(setwd("~/thread_strength_trajectory_2019/Trajectories_together"))
       }else{
-        setwd("~/threads/Trajectories_plots/Error")
+        setwd("~/thread_strength_trajectory_2019/Trajectories_plots/Error")
         
       }
 
 
   
     # Write deltas to file ####
-    setwd("~/threads/PeakValley2.1")
+    setwd("~/thread_strength_trajectory_2019/PeakValley2.1")
     write.csv(x = T1, file = paste("PV",file_names[j], sep = "_"))
     }
   }, error = function(e){cat("ERROR :", conditionMessage(e), "\n")})

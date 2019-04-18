@@ -74,9 +74,9 @@ output_append <- input_names[0,]
 setwd(wd_peaks)
 files <- list.files(full.names = TRUE, include.dirs = TRUE)
 file_names <- list.files(full.names = FALSE, include.dirs = FALSE)
-j<-11
-#for(j in 1:length(file_names)){ ####
-for(j in 1:20){
+#j<-11
+for(j in 1:length(file_names)){ ####
+#for(j in 1:20){
   tryCatch({
     data_1 <- 0
     test2 <- 0
