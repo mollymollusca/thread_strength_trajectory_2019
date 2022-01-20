@@ -3,7 +3,7 @@
 # this can start with step 2. This will make it really easy to know exactly what I did and also to know which trajectories I need to do by hand. 
 # Open the file and calculate deltas
 # To do: still need to do QC, want to have stuff finalized before I go through that process by hand
-# Also want to select below 0.05N... like 0.02
+# Also want to select below 0.05N... like 0.01 or 0.02
 # 5/4/18 I think that I changed the criteria but then I wasn't convinved that everything was real... 
 # I think I need to just run this again with the new criteria... a
 # Also I was making a graph 
@@ -12,20 +12,27 @@
 rm(list=ls())
 
 #only run 1X per analysis
-sysdate <- Sys.time()
+sysdate <- Sys.Date()
+min_thread_strength_accepted <- 0.01
 
 # Set up run metadata ####
-setwd("~/threads")
-newfolder <- paste("~/threads/analysis",sysdate, sep="")
+# Data sources
+wd_traj <- "~/thread_strength_trajectory_2019/Trajectories_together"
+wd_peaks <- "~/thread_strength_trajectory_2019/analysis_20190417_good/PeakValley"
+
+# Create the following working directories
+directory <- "~/thread_strength_trajectory_2019/analysis_20190417_good"
+newfolder <- paste(directory,'/step_3_',sysdate, sep="")
 dir.create(newfolder)
+
 wd_del_traj_plot <- paste(newfolder,"/del_traj_plot", sep="")
 wd_del_hist_plot <- paste(newfolder,"/del_hist_plot", sep="")
 wd_deltas <- paste(newfolder,"/deltas", sep="")
 dir.create(wd_del_traj_plot)
 dir.create(wd_del_hist_plot)
 dir.create(wd_deltas)
-wd_traj <- "~/threads/Trajectories_together"
-wd_peaks <- "~/threads/PeakValley"
+
+
 
 comment(newfolder) <- "Info for this run. First time making an annotation file"
 
@@ -74,9 +81,9 @@ output_append <- input_names[0,]
 setwd(wd_peaks)
 files <- list.files(full.names = TRUE, include.dirs = TRUE)
 file_names <- list.files(full.names = FALSE, include.dirs = FALSE)
-j<-11
-#for(j in 1:length(file_names)){ ####
-for(j in 1:20){
+#j<-22
+for(j in 1:length(file_names)){ ####
+#for(j in 1:20){
   tryCatch({
     data_1 <- 0
     test2 <- 0
@@ -100,18 +107,23 @@ for(j in 1:20){
 #test2 <- test2[test2$yDelta>=0.05,]
 print(j)
 print(files[j])
-# plot(data_1$load~data_1$time, pch=".", cex=1.5)
-# points(test2$Pload~test2$Ptime, pch=16, col="red")
-# points(test2$Vload~test2$Vtime, pch=16, col="blue")
+ #plot(data_1$load~data_1$time, pch=".", cex=1.5)
+ #points(test2$Pload~test2$Ptime, pch=16, col="red")
+ #points(test2$Vload~test2$Vtime, pch=16, col="blue")
 
 yDelta <- NULL
 yDelta <- test2$Pload-test2$Vload
 df1 <- cbind(test2,yDelta)
-df2a <- df1[df1$Vload>-.02,]
+df2a <- df1[df1$Vload>-.03,]
 df2a$Vload[df2a$Vload<0] <- 0
-df2 <- df1[df2a$Pload>0.04,]
+df2 <- df2a[df2a$Pload>0.01,]
 df3 <- df2[df2$yDelta<=0.5,]
-df4 <- df3[df3$yDelta>=0.04,]
+df4 <- df3[df3$yDelta>=min_thread_strength_accepted,] # (see below)
+# Again, it's looking like the magic number of a minimum of 0.03 
+# catches oscillations that are not real breaks for the shittier code.
+# The code I was originally using doesn't really get those oscillations
+# so it's probably OK to include down to a delta of 0.01
+
 df_QC <- df4[!is.na(df4$Ptime),]
 
 setwd(wd_del_traj_plot)
@@ -179,67 +191,80 @@ test2<-df_QC
  
 # Delta calculations ####
 del_d <- df_QC$yDelta
-median_del <-9999
-sd_del <- 9999
+median_del <-NA
+sd_del <- NA
+i.max <- NA
+M2 = NA
 QC_flag <- 1
-if(length(del_d)>1){
+d <- NA
+if(length(del_d)>=2){
 d <- density(del_d)
-
+i.max = which.max(d$y)
+M2 = d$x[i.max]
+M2
+}
+if(length(del_d)<2){
+  
+}
 median_del <-median(del_d)
 sd_del <- sd(del_d)
-}
-M2 = 9999
+
+
 if(length(del_d)>0){
-i = which.max(d$y)
-M2 = d$x[i]
-M2
+ h <- hist((del_d), breaks=seq(from=0,to=1,by = 0.05))
+ med <- median(del_d, na.rm = TRUE)
 
-h <- hist((del_d), breaks=seq(from=0,to=1,by = 0.05))
-med <- median(del_d, na.rm = TRUE)
+ b1<-sum(h$counts[h$mids < 2*med]) #sum of breaks around the median
+ b2<-sum(h$counts[h$mids >= 2*med & h$mids < 3*med]) #sum of breaks between 2-3 times the median
+ b3<-sum(h$counts[h$mids >= 3*med & h$mids < 4*med])
+ b4<-sum(h$counts[h$mids >= 4*med & h$mids < 5*med])
+ b5<-sum(h$counts[h$mids >= 5*med & h$mids < 6*med])
+ b6<-sum(h$counts[h$mids >= 6*med & h$mids < 7*med])
+ b7<-sum(h$counts[h$mids >= 7*med & h$mids < 8*med])
+ b8ormore<-sum(h$counts[h$mids >= 8*med])
 
-b1<-sum(h$counts[h$mids < 2*med]) #sum of breaks around the median
-b2<-sum(h$counts[h$mids >= 2*med & h$mids < 3*med]) #sum of breaks between 2-3 times the median
-b3<-sum(h$counts[h$mids >= 3*med & h$mids < 4*med])
-b4<-sum(h$counts[h$mids >= 4*med & h$mids < 5*med])
-b5<-sum(h$counts[h$mids >= 5*med & h$mids < 6*med])
-b6<-sum(h$counts[h$mids >= 6*med & h$mids < 7*med])
-b7<-sum(h$counts[h$mids >= 7*med & h$mids < 8*med])
-b8ormore<-sum(h$counts[h$mids >= 8*med])
+ b1m <- b1
+ b2m <- 2*b2
+ b3m <- 3*b3
+ b4m <- 4*b4
+ b5m <- 5*b5
+ b6m <- 6*b6
+ b7m <- 7*b7
+ b8m <- 8*b8ormore
 
-b1m <- b1
-b2m <- 2*b2
-b3m <- 3*b3
-b4m <- 4*b4
-b5m <- 5*b5
-b6m <- 6*b6
-b7m <- 7*b7
-b8m <- 8*b8ormore
+ single_breaks <- b1
+ multiple_break_groups <- sum(b2,b3,b4,b5,b6,b7,b8ormore)
+ total_thread_breaks <- sum(b1m,b2m,b3m,b4m,b5m,b6m,b7m,b8m)
 
-single_breaks <- b1
-multiple_break_groups <- sum(b2,b3,b4,b5,b6,b7,b8ormore)
-total_thread_breaks <- sum(b1m,b2m,b3m,b4m,b5m,b6m,b7m,b8m)
+ setwd(wd_del_hist_plot)
+ # plot histogram ####
+ png(filename = paste(file_names[j],".png", sep = ""))
+  par(mfrow = c(3,1))
+  if(!is.na(d[1])){
+   plot(d)
+  } else {hist(del_d, breaks=seq(from=0,to=2,by = 0.05))}
+  hist(del_d, breaks=seq(from=0,to=2,by = 0.05))
+  del_d_singles<- del_d[del_d<2*med]
+  hist(del_d_singles, breaks=seq(from=0,to=2,by = 0.05))
+ dev.off()
+ 
+ mean(del_d_singles)
 
-plot(density(del_d))
-hist(del_d, breaks=seq(from=0,to=2,by = 0.05))
-del_d_singles<- del_d[del_d<2*med]
-hist(del_d_singles, breaks=seq(from=0,to=2,by = 0.05))
-mean(del_d_singles)
+ QC_flag_criteria1 <- " If 80% of the breaks were single thread breaks, we will consider it a typical sample. 
+ # If not, let's flag it and look more in depth at this sample."
+ QC_flag_criteria2 <- " If there are <5 breaks that are single thread breaks, we will consider it a typical sample. 
+ # If not, let's flag it and look more in depth at this sample."
 
-QC_flag_criteria1 <- " If 80% of the breaks were single thread breaks, we will consider it a typical sample. 
-# If not, let's flag it and look more in depth at this sample."
-QC_flag_criteria2 <- " If there are <5 breaks that are single thread breaks, we will consider it a typical sample. 
-# If not, let's flag it and look more in depth at this sample."
-
-if(single_breaks<.8*total_thread_breaks){
+ if(single_breaks<.8*total_thread_breaks){
   QC_flag <- 1
-} else {
+ } else {
   QC_flag <- 0
-}
-if(single_breaks<5){
+ }
+ if(single_breaks<5){
   QC_flag <- 1
-} else {
+ } else {
   QC_flag <- 0
-}
+ }
 }
 
 # Save deltas in output ####
@@ -267,7 +292,7 @@ output_vec <- data.frame(
   b8=NA
 )
 
-if(b1>1){
+if(b1>=1){
 output_vec <- data.frame(
   date = date,
   analysis_date = sysdate,
@@ -296,8 +321,8 @@ output_vec <- data.frame(
     date = date,
     analysis_date = sysdate,
     filename = file_names[j],
-    specimen_label = NA,
-    max_load = NA,
+    specimen_label = specimen_label,
+    max_load = max_load,
     dist_max = NA,
     median = NA,
     variance = NA,
