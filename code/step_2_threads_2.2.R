@@ -76,7 +76,6 @@ PeaksAndValleys<-function(data, pThresh=0, vThresh=0, maxint=500, maxPre=0.1, dy
   #first peak/valley pair#
   
     n<-5
-    n<-23833
   repeat{
     n<-n+1
     
